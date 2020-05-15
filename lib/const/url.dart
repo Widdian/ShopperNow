@@ -7,3 +7,6 @@
 const baseUrlAPI = 'https://light-return-272321.appspot.com/v1';
 const baseUrlWeb = 'https://frontend-dot-light-return-272321.appspot.com';
 const termsUrl = 'https://www.ondr.com.br/termos-de-uso/';
+const searchApi = 'https://api.giphy.com/v1/gifs';
+
+const apiKey = 'XeQa9gFHX9tURQXvU3QZcc60vavl4ynM';

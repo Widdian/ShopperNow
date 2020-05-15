@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:overlay_support/overlay_support.dart';
-import 'package:shopper/const/styles.dart';
+import 'package:shopper/const/style.dart';
 
 import 'sizeConfig.dart';
 

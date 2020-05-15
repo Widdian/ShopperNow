@@ -1,12 +1,11 @@
 import 'package:email_validator/email_validator.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:overlay_support/overlay_support.dart';
 import 'package:progress_dialog/progress_dialog.dart';
-import 'package:shopper/const/colorsConst.dart';
-import 'package:shopper/const/styles.dart';
+import 'package:shopper/const/colorConst.dart';
+import 'package:shopper/const/style.dart';
 import 'package:shopper/const/url.dart';
-import 'package:shopper/pages/homePage.dart';
+import 'package:shopper/page/homePage.dart';
 import 'package:shopper/util/notificationBox.dart';
 import 'package:shopper/util/sizeConfig.dart';
 
@@ -66,7 +65,7 @@ class _LoginPageState extends State<LoginPage> {
                                     SizeConfig.safeBlockVertical * 4, 0.0, 0.0),
                                 child: Image(
                                   image: AssetImage('assets/logoNow.png'),
-                                  width: SizeConfig.safeBlockHorizontal * 40,
+                                  width: SizeConfig.safeBlockHorizontal * 30,
                                 ),
                               ),
                               Padding(
@@ -241,10 +240,13 @@ class _LoginPageState extends State<LoginPage> {
             await pr.show();
             await pr.hide().whenComplete(() async {
               try {
-                AuthResult user = await FirebaseAuth.instance
+                firebaseUser = await firebaseAuth
                     .signInWithEmailAndPassword(
                         email: userController.text.trim(),
                         password: passwordController.text.trim());
+                await dataShared.setString('user', firebaseUser.user.email);
+                await dataShared.setString('token', firebaseUser.user.uid);
+                await dataShared.setBool('logged', true);
                 await Navigator.pushReplacement(context,
                     MaterialPageRoute(builder: (context) => HomePage()));
               } catch (e) {

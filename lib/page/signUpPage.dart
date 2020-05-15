@@ -1,14 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:email_validator/email_validator.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:overlay_support/overlay_support.dart';
 import 'package:progress_dialog/progress_dialog.dart';
-import 'package:shopper/const/colorsConst.dart';
-import 'package:shopper/const/styles.dart';
-import 'package:shopper/pages/homePage.dart';
+import 'package:shopper/const/colorConst.dart';
+import 'package:shopper/const/style.dart';
+import 'package:shopper/page/loginPage.dart';
 import 'package:shopper/util/notificationBox.dart';
 import 'package:shopper/util/sizeConfig.dart';
 
@@ -42,8 +41,6 @@ class _SignUpPageState extends State<SignUpPage> {
   final formKey = GlobalKey<FormState>();
 
   bool _validateNumber = false, _validateUpper = false, _validateLength = false;
-
-  bool _google = true, _facebook = true;
 
   static String assetCheckNok = 'assets/passwordCheckNok.svg';
   static String assetCheckOk = 'assets/passwordCheckOk.svg';
@@ -95,7 +92,7 @@ class _SignUpPageState extends State<SignUpPage> {
                                   SizeConfig.safeBlockVertical * 4, 0.0, 0.0),
                               child: Image(
                                 image: AssetImage('assets/logoNow.png'),
-                                width: SizeConfig.safeBlockHorizontal * 40,
+                                width: SizeConfig.safeBlockHorizontal * 30,
                               ),
                             ),
                             Padding(
@@ -161,35 +158,6 @@ class _SignUpPageState extends State<SignUpPage> {
         ),
       ),
     );
-  }
-
-  void _socialMedia(String type, String name, String email, String password) {
-    setState(() {
-      if (type != null && type != '') {
-        if (type == 'G') {
-          _google = true;
-          _facebook = false;
-          typeOfSign = 'google';
-        } else if (type == 'FB') {
-          _google = false;
-          _facebook = true;
-          typeOfSign = 'facebook';
-        }
-        var fullname = name.split(' ').toList();
-
-        nameController.text = fullname.first;
-        fullname.removeAt(0);
-        if (fullname.isNotEmpty) {
-          lastnameController.text = fullname.join(' ');
-        }
-        emailController.text = email;
-        passwordController.text = password;
-
-        _validateNumber = true;
-        _validateUpper = true;
-        _validateLength = true;
-      }
-    });
   }
 
   bool _onPressed() {
@@ -452,7 +420,7 @@ class _SignUpPageState extends State<SignUpPage> {
             await pr.show();
             await pr.hide().whenComplete(() async {
               try {
-                AuthResult user = await FirebaseAuth.instance
+                firebaseUser = await firebaseAuth
                     .createUserWithEmailAndPassword(
                         email: emailController.text.trim(),
                         password: passwordController.text.trim());
@@ -466,7 +434,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   'email': emailController.text.trim()
                 });
                 await Navigator.pushReplacement(context,
-                    MaterialPageRoute(builder: (context) => HomePage()));
+                    MaterialPageRoute(builder: (context) => LoginPage()));
               } catch (e) {
                 showOverlayNotification((context) {
                   return NotificationBox('${e.message}', 'error');

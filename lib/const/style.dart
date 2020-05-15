@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'colorsConst.dart';
+import 'colorConst.dart';
 
 TextStyle styleTextBold18 = TextStyle(
   fontSize: 18,
