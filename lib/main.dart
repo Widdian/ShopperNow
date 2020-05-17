@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:overlay_support/overlay_support.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shopper/database/databaseFactory.dart';
 import 'package:shopper/page/homePage.dart';
 import 'package:shopper/page/loginPage.dart';
 import 'package:shopper/page/signUpPage.dart';
@@ -107,6 +108,8 @@ SharedPreferences dataShared;
 
 FirebaseAuth firebaseAuth = FirebaseAuth.instance;
 AuthResult firebaseUser;
+
+DatabaseFactory db = DatabaseFactory.instance;
 
 void fieldFocusChange(
     BuildContext context, FocusNode currentFocus, FocusNode nextFocus) {

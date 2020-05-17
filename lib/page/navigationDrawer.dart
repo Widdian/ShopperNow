@@ -1,14 +1,15 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:shopper/const/colorConst.dart';
 import 'package:shopper/const/style.dart';
+import 'package:shopper/page/profile.dart';
 import '../main.dart';
 import 'loginPage.dart';
 
 class NavDrawer extends StatelessWidget {
-  NavDrawer(this.tabController, this.data);
-  
-  final Map<String,dynamic> data;
+  NavDrawer(this.tabController, this.data, this.id);
+
+  final Map<String, dynamic> data;
+  final String id;
   final TabController tabController;
 
   @override
@@ -50,15 +51,18 @@ class NavDrawer extends StatelessWidget {
                         color: Colors.white,
                       ),
                       onPressed: () async {
-                        await dataShared.setString('user', null);
-                        await dataShared.setString('token', null);
-                        await dataShared.setBool('logged', false);
                         await firebaseAuth.signOut();
                         firebaseUser = null;
 
                         await Navigator.of(context).pushAndRemoveUntil(
                             MaterialPageRoute(
-                                builder: (context) => LoginPage()),
+                                builder: (context) {
+                                  dataShared.setString('user', null);
+                                  dataShared.setString('token', null);
+                                  dataShared.setBool('logged', false);
+                                  return LoginPage();
+                                },
+                            ),
                             (Route<dynamic> route) => false);
                       },
                     ),
@@ -71,26 +75,43 @@ class NavDrawer extends StatelessWidget {
             ),
           ),
           ListTile(
-            leading: Icon(Icons.home, color: BLUE_LOGO_COLOR,),
-            title: Text('Home', style: styleTextNormal16,),
-            onTap: () async {
-              await tabController.animateTo(1);
-              await Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.star, color: BLUE_LOGO_COLOR,),
-            title: Text('Favoritos', style: styleTextNormal16),
+            leading: Icon(
+              Icons.home,
+              color: BLUE_LOGO_COLOR,
+            ),
+            title: Text(
+              'Home',
+              style: styleTextNormal16,
+            ),
             onTap: () async {
               await tabController.animateTo(0);
               await Navigator.pop(context);
             },
           ),
           ListTile(
-            leading: Icon(Icons.person, color: BLUE_LOGO_COLOR,),
+            leading: Icon(
+              Icons.star,
+              color: BLUE_LOGO_COLOR,
+            ),
+            title: Text('Favoritos', style: styleTextNormal16),
+            onTap: () async {
+              await tabController.animateTo(1);
+              await Navigator.pop(context);
+            },
+          ),
+          ListTile(
+            leading: Icon(
+              Icons.person,
+              color: BLUE_LOGO_COLOR,
+            ),
             title: Text('Perfil', style: styleTextNormal16),
             onTap: () async {
-              await tabController.animateTo(2);
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ProfilePage(data, id),
+                ),
+              );
               await Navigator.pop(context);
             },
           ),

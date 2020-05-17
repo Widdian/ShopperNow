@@ -4,7 +4,6 @@ import 'package:overlay_support/overlay_support.dart';
 import 'package:progress_dialog/progress_dialog.dart';
 import 'package:shopper/const/colorConst.dart';
 import 'package:shopper/const/style.dart';
-import 'package:shopper/const/url.dart';
 import 'package:shopper/page/homePage.dart';
 import 'package:shopper/util/notificationBox.dart';
 import 'package:shopper/util/sizeConfig.dart';

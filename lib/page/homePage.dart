@@ -1,10 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:share/share.dart';
 import 'package:shopper/const/colorConst.dart';
 import 'package:shopper/const/style.dart';
+import 'package:shopper/database/entity/favorite.dart';
+import 'package:shopper/page/dialog/deleteDialog.dart';
+import 'package:shopper/page/dialog/insertDialog.dart';
 import 'package:shopper/page/gifPage.dart';
-import 'package:shopper/service/api/userApi.dart';
+import 'package:shopper/service/api/searchApi.dart';
 import 'package:shopper/util/sizeConfig.dart';
 import 'package:transparent_image/transparent_image.dart';
 
@@ -33,18 +35,26 @@ class _HomePageState extends State<HomePage>
 
   Future<QuerySnapshot> _user;
 
+  Future<Map> _gifSearch;
+  Future<List<Favorite>> _favoriteSearch;
+
   @override
   void initState() {
     super.initState();
+    takeGIFsFromFirestore();
     setState(() {
       _user = _getUser();
+      _gifSearch = _getGifs();
+      _favoriteSearch = _getFavorites();
     });
-    _tabController = TabController(vsync: this, length: 3, initialIndex: 1);
+
+    _tabController = TabController(vsync: this, length: 2, initialIndex: 0);
   }
 
   Future<Null> _refreshScreen() async {
     setState(() {
-
+      _gifSearch = _getGifs();
+      _favoriteSearch = _getFavorites();
     });
   }
 
@@ -56,11 +66,13 @@ class _HomePageState extends State<HomePage>
         if (snapshot.connectionState == ConnectionState.done) {
           return SafeArea(
             child: DefaultTabController(
-              length: 3,
+              length: 2,
               child: Scaffold(
                 key: _scaffoldKey,
-                drawer:
-                    NavDrawer(_tabController, snapshot.data.documents[0].data),
+                drawer: NavDrawer(
+                    _tabController,
+                    snapshot.data.documents[0].data,
+                    snapshot.data.documents[0].documentID),
                 resizeToAvoidBottomInset: true,
                 resizeToAvoidBottomPadding: true,
                 body: RefreshIndicator(
@@ -96,13 +108,6 @@ class _HomePageState extends State<HomePage>
                   ),
                 ),
                 bottomNavigationBar: _bottomAppBar(),
-                /*floatingActionButton: FloatingActionButton(
-                  onPressed: () {
-
-                  },
-                  backgroundColor: BLUE_LOGO_COLOR,
-                  child: Icon(Icons.feedback),
-                ),*/
               ),
             ),
           );
@@ -163,9 +168,8 @@ class _HomePageState extends State<HomePage>
         controller: _tabController,
         physics: ClampingScrollPhysics(),
         children: <Widget>[
-          _tabFavorites(),
           _tabSearch(),
-          _tabProfile(),
+          _tabFavorites(),
         ],
       ),
     );
@@ -193,7 +197,7 @@ class _HomePageState extends State<HomePage>
         ),
         Expanded(
           child: FutureBuilder(
-            future: _getGifs(),
+            future: _gifSearch,
             builder: (context, snapshot) {
               switch (snapshot.connectionState) {
                 case ConnectionState.waiting:
@@ -222,23 +226,49 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget _tabFavorites() {
-    return ListView(
-      children: <Widget>[],
-      padding: EdgeInsets.only(
-        top: SizeConfig.safeBlockVertical * 2,
-        right: SizeConfig.safeBlockVertical * 1,
-        left: SizeConfig.safeBlockVertical * 1,
-        bottom: SizeConfig.safeBlockVertical * 1,
-      ),
-      physics: ClampingScrollPhysics(),
-    );
-  }
-
-  Widget _tabProfile() {
-    return Center(
-      child: Text(
-        '',
-      ),
+    return Column(
+      children: <Widget>[
+        Padding(
+          padding: EdgeInsets.only(
+              top: SizeConfig.safeBlockVertical * 2,
+              right: SizeConfig.safeBlockHorizontal * 2,
+              left: SizeConfig.safeBlockHorizontal * 2),
+          child: Text(
+            'GIFs Favoritos',
+            style: styleTextNormal25,
+            textAlign: TextAlign.center,
+          ),
+        ),
+        Expanded(
+          child: FutureBuilder(
+            future: _favoriteSearch,
+            builder: (context, AsyncSnapshot<List<Favorite>> snapshot) {
+              switch (snapshot.connectionState) {
+                case ConnectionState.waiting:
+                case ConnectionState.none:
+                  return Container(
+                    width: 200.0,
+                    height: 200.0,
+                    alignment: Alignment.center,
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      strokeWidth: 5.0,
+                    ),
+                  );
+                default:
+                  if (snapshot.hasError) {
+                    return Container();
+                  }
+                  if (snapshot.data.isEmpty) {
+                    return Container();
+                  } else {
+                    return _createFavoriteTable(context, snapshot);
+                  }
+              }
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -249,20 +279,15 @@ class _HomePageState extends State<HomePage>
         controller: _tabController,
         tabs: [
           Tab(
-            text: 'Favoritos',
-            icon: Icon(Icons.star, color: Colors.white),
-          ),
-          Tab(
             text: 'Busca',
-            icon: Icon(Icons.search, color: Colors.white),
+            icon: Icon(Icons.search, ),
           ),
           Tab(
-            text: 'Perfil',
-            icon: Icon(Icons.person, color: Colors.white),
+            text: 'Favoritos',
+            icon: Icon(Icons.star, ),
           ),
         ],
         indicatorColor: Colors.white,
-        labelColor: Colors.white,
       ),
       elevation: 15,
     );
@@ -286,6 +311,7 @@ class _HomePageState extends State<HomePage>
         setState(() {
           _search = searchController.text;
           _offset = 0;
+          _gifSearch = _getGifs();
         });
       },
       onFieldSubmitted: (_) {
@@ -296,10 +322,12 @@ class _HomePageState extends State<HomePage>
   }
 
   Future<QuerySnapshot> _getUser() async {
-    return await Firestore.instance
+    QuerySnapshot snapshot = await Firestore.instance
         .collection('users')
         .where('email', isEqualTo: dataShared.getString('user'))
         .getDocuments();
+
+    return snapshot;
   }
 
   Future<Map> _getGifs() async {
@@ -312,6 +340,12 @@ class _HomePageState extends State<HomePage>
     return response;
   }
 
+  Future<List<Favorite>> _getFavorites() async {
+    var pd = await db.get();
+
+    return await pd.favoriteDao.findAllFavorite(dataShared.getString('user'));
+  }
+
   int _getCount(List data) {
     if (_search == null) {
       return data.length;
@@ -322,6 +356,7 @@ class _HomePageState extends State<HomePage>
 
   Widget _createGifTable(BuildContext context, AsyncSnapshot snapshot) {
     return GridView.builder(
+      physics: ClampingScrollPhysics(),
       padding: EdgeInsets.all(10.0),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
@@ -332,22 +367,33 @@ class _HomePageState extends State<HomePage>
       itemBuilder: (context, index) {
         if (_search == null || index < snapshot.data["data"].length) {
           return GestureDetector(
-            child: FadeInImage.memoryNetwork(
-                placeholder: kTransparentImage,
-                image: snapshot.data["data"][index]["images"]["fixed_height"]
-                    ["url"],
-                height: 300.0,
-                fit: BoxFit.cover),
+            child: Stack(
+              children: <Widget>[
+                FadeInImage.memoryNetwork(
+                  placeholder: kTransparentImage,
+                  image: snapshot.data["data"][index]["images"]["fixed_height"]
+                      ["url"],
+                  height: 300.0,
+                  fit: BoxFit.cover,
+                ),
+              ],
+            ),
             onTap: () {
               Navigator.push(
                   context,
                   MaterialPageRoute(
                       builder: (context) =>
-                          GifPage(snapshot.data["data"][index])));
+                          GifPage(gifData: snapshot.data["data"][index])));
             },
-            onLongPress: () {
-              Share.share(snapshot.data["data"][index]["images"]["fixed_height"]
-                  ["url"]);
+            onLongPress: () async {
+              await showDialog(
+                context: context,
+                builder: (BuildContext context) =>
+                    InsertDialog(snapshot.data['data'][index]),
+              );
+              setState(() {
+                _favoriteSearch = _getFavorites();
+              });
             },
           );
         } else {
@@ -377,5 +423,96 @@ class _HomePageState extends State<HomePage>
         }
       },
     );
+  }
+
+  Widget _createFavoriteTable(
+      BuildContext context, AsyncSnapshot<List<Favorite>> snapshot) {
+    return GridView.builder(
+      physics: ClampingScrollPhysics(),
+      padding: EdgeInsets.all(10.0),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 10.0,
+        mainAxisSpacing: 10.0,
+      ),
+      itemCount: _getCount(snapshot.data),
+      itemBuilder: (context, index) {
+        if (index < snapshot.data.length) {
+          return GestureDetector(
+            child: FadeInImage.memoryNetwork(
+              placeholder: kTransparentImage,
+              image: snapshot.data[index].url,
+              height: 300.0,
+              fit: BoxFit.cover,
+            ),
+            onTap: () {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => GifPage(
+                            gifDB: snapshot.data[index],
+                            favorite: true,
+                          )));
+            },
+            onLongPress: () async {
+              await showDialog(
+                context: context,
+                builder: (BuildContext context) =>
+                    DeleteDialog(snapshot.data[index].id),
+              );
+              setState(() {
+                _favoriteSearch = _getFavorites();
+              });
+            },
+          );
+        } else {
+          return Container(
+            child: GestureDetector(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Icon(
+                    Icons.add,
+                    color: Colors.white,
+                    size: 70.0,
+                  ),
+                  Text(
+                    "Carregar mais...",
+                    style: TextStyle(color: Colors.white, fontSize: 22.0),
+                  ),
+                ],
+              ),
+              onTap: () {
+                setState(() {
+                  _offset += 21;
+                });
+              },
+            ),
+          );
+        }
+      },
+    );
+  }
+
+  void takeGIFsFromFirestore() async {
+    var pd = await db.get();
+    Stream<QuerySnapshot> fav = await Firestore.instance
+        .collection('favorite')
+        .where('user', isEqualTo: dataShared.getString('user'))
+        .snapshots();
+
+    await fav.forEach((content) async {
+      await content.documents.forEach((element) async {
+        await pd.favoriteDao.insertFavorite(Favorite(
+            element.documentID,
+            element.data['url'],
+            element.data['title'],
+            dataShared.getString('user')));
+      });
+    });
+
+    setState(() {
+      _favoriteSearch = _getFavorites();
+    });
   }
 }
